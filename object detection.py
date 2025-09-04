@@ -94,7 +94,7 @@ with detection_graph.as_default():
 
             # ---------------- Distance & Warning ----------------
             for i, b in enumerate(np.squeeze(boxes)):
-                if np.squeeze(classes)[i] == 1:  # Class 1 = pothole in your setup
+                if np.squeeze(classes)[i] == 1:  # Class 1 = pothole
                     if np.squeeze(scores)[i] >= 0.9:
                         mid_x = (b[1] + b[3]) / 2
                         mid_y = (b[0] + b[2]) / 2
