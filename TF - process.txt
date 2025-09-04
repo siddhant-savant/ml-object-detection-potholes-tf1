@@ -1,0 +1,196 @@
+Process for Windows10:
+
+
+1. Install python 3.5.0-amd64.
+
+2. Check python by typing it in cmd.
+
+3. Create folder in C drive name it TensorFlow.
+
+4. Open cmd in TensorFlow folder.
+
+5. Type (pip install tensorflow).
+
+6. To check type - (python)
+                   (import tensorflow as tf)   
+          .... [>>>]
+
+7. Now open the tf testing file.py and run it in IDLE 
+
+   github repository (https://github.com/tensorflow/models/tree/master/research/object_detection)
+   copy the contents as zip.
+
+8. Download dependencies (pip install --user Cython)
+                         (pip install --user contextlib2)
+                         (pip install --user pillow)
+                         (pip install --user lxml)
+                         (pip install --user jupyter)
+                        *(pip install --user numpy)*
+                         (pip install --user matplotlib)
+
+9. Extract the [models-master] and [protoc-3.4.0-win32] zip files.
+
+   [models-master]        => [models-master] folder
+   [protoc-3.4.0-win32]   => [include, bin ] folders   ... {protoc will be in bin}
+
+   copy the protoc file and paste it in [models-master > research > ]
+
+10. Protobuf compilation 
+   
+    Open cmd in research folder and type (protoc object_detection/protos/*.proto --python_out=.)
+    Then in the same command window type (jupyter notebook) alternate (python -m notebook)
+
+11. Then go to object detection folder and run the .ipynb
+    Should pop up two images.
+
+*****To load a Video through a Web Cam****
+
+12. Download opencv by opening cmd in the TensorFlow folder 
+    (pip install opencv-python==3.4.3.18)
+    to check version -- in cmd -- (python)
+                                  (import cv2)
+                                  (cv2.__version__)
+
+13. Load the python script of object detection and run it.
+
+
+*****To train an object detection classifier****
+
+14. Download ssd_mobilenet_v1_coco model from tensorflow's model zoo page             (https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md)
+    extract the downloaded model file into C:\TensorFlow\models\research\object_detection directory.
+
+
+15. Download repository located at (https://github.com/EdjeElectronics/TensorFlow-Object-Detection-API-Tutorial-Train-Multiple-Objects-Windows-10)
+    extract all the contents into C:\TensorFlow\models\research\object_detection directory. Replace existing files.
+
+
+16. To train object detection delete the *FILES* from the following folders.
+    **All files in \object_detection\images\train and \object_detection\images\test
+    **The “test_labels.csv” and “train_labels.csv” files in \object_detection\images
+    **All files in \object_detection\training
+    **All files in \object_detection\inference_graph
+
+
+17. Compile the training data.
+    [For Pothole Detection the training data was compiled using dashboard camera and its video footage was converted into frames using videotoframes.py]
+    [keep the image size small ~ 200kb using the resizer.py]
+    [For pothole detection 1000 images were used.]
+    move 20% to test folder within object_detection>images directory
+    move 80% to train folder within object_detection>images directory  
+
+18. LabelImg
+    Download pre-built version for windows from (https://tzutalin.github.io/labelImg/) 
+    *version dwonloaded (windwos_v1.5.0)* 
+    Extract the downloaded file 
+    The labelImg application will be present in the windows_v1.5.0 folder.
+    Open it and select the directory in which the test/traing data is stored and start labelling!
+
+
+19. Convert .xml files to .csv
+    Open cmd in C:\TensorFlow\models\research\object_detection directory and type (python xml_to_csv.py)
+    train_labels.csv and test_labels.csv will be generated in the object_detection>images folder.
+
+20. Now open the generate_tfrecord.py and replace the label map starting at line 31 with the following
+    
+    >>># TO-DO replace this with label map
+       def class_text_to_int(row_label):
+       if row_label == 'POTHOLE':
+           return 1
+       else:
+           None
+
+21. Now generate TFrecord files by typing the following commands in the cmd from C:\TensorFlow\models\research\object_detection
+    
+    (python generate_tfrecord.py --csv_input=images\train_labels.csv --image_dir=images\train --output_path=train.record)
+    (python generate_tfrecord.py --csv_input=images\test_labels.csv --image_dir=images\test --output_path=test.record)
+     
+    train.record and test.record file will be generated in object_detection directory
+
+22. Create a Label Map by opening a text editor (Notepad++ version__7.6.0.0) and save it as labelmap.pbtxt in the 
+    C:\TensorFlow\models\research\object_detection\training directory
+    Copy the following in the labelmap.pbtxt file
+    
+    item {
+      id: 1
+      name: 'POTHOLE'
+    } 
+
+
+23. Now the object detection training pipeline must be configured.
+    From C:\TensorFlow\models\research\object_detection\samples\config copy the ssd_mobilenet_v1_pets config file into object_detetction > training directory 
+    Now open the file with a text editor and modify the following
+    
+    Change num_classes:1 (for Pothole detection)
+    
+    Change fine_tune_checkpoint to:C:/TensorFlow/models/research/object_detection/ssd_mobilenet_v1_coco_2018_01_28/model.ckpt
+
+    Change num_examples to the number of images in the [images > test directory].
+
+    Add addresses for the following in the train_input_reader section.
+
+    >input_path : "C:/TensorFlow/models/research/object_detection/train.record"
+
+    >label_map_path: "C:/TensorFlow/models/research/object_detection/training/labelmap.pbtxt"
+
+    Add addresses for the following in the eval_input_reader section.
+
+    >input_path : "C:/TensorFlow/models/research/object_detection/test.record"
+ 
+    >label_map_path: "C:/TensorFlow/models/research/object_detection/training/labelmap.pbtxt"
+    save the changes and exit the text editor. 
+
+
+24. From the cmd in object detection type the following command to run the training
+    > python train.py --logtostderr --train_dir=training/ --pipeline_config_path=training/ssd_mobilenet_v1_pets.config
+    
+    To open tensorboard
+    > tensorboard --logdir=training [cmd in object_detection]
+    > ((tensorboard --logdir=training:C:\TensorFlow\models\research\object_detection\training/ --host localhost --port 8088))
+
+25. Now to generate the frozen inference graph type the folllowing command in the command prompt 
+
+    >python export_inference_graph.py --input_type image_tensor --pipeline_config_path training/ssd_mobilenet_v1_pets.config --trained_checkpoint_prefix training/model.ckpt-XXXX --output_directory inference_graph
+
+    [the XXXX must be replaced with the highest-numbered .ckpt file in the training folder:] [23891 was obtained for pothole detection] 
+    this generates frozen_inference_graph.pb file in the [object_detection > inference_graph folder]
+
+26. Now run the object_detection_video.py file. 04 January 2019
+    {video edit config [720x480,15fps,MPEG]}
+        
+*****CHANGES****
+
+1. Bounding box width reduced. 13 January 2019
+   > [line 113 within detection.py script] 'to check line number open python script with Notepad++'
+   > line_thickness=3  [was 8]
+
+2. Changed the default bounding box colour from 'green' to 'red'. 18 January 2019 
+   > [in C:\TensorFlow\models\research\object_detection\utils\visualization_utils.py] after line 166 i.e below draw = ImageDraw.Draw(image) add...
+   > color = 'blue'
+
+3. Removed the label "POTHOLE". 18 January 2019
+   > [in C:\TensorFlow\models\research\object_detection\utils\visualization_utils.py] comment'#' all lines from line 176 to line 205
+
+4. Relative distance of potholes and 'WARNING!!!' signal if pothole is in path of vehicles. 24 January 2018 
+   > [in object_detection.py] at the end of visualize section add
+   for i,b in enumerate(boxes[0]):
+        if classes[0][i] == 1:
+            if scores[0][i] >= 0.9:
+                mid_x = (boxes[0][i][1]+boxes[0][i][2])/2
+                mid_y = (boxes[0][i][0]+boxes[0][i][1])/2
+                apx_distance = round(((1 - (boxes[0][i][2] - boxes[0][i][1]))**4),1)
+                cv2.putText(frame, '{}'.format(apx_distance), (int(mid_x*800),int(mid_y*450)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+                if apx_distance <=0.5:
+                    if mid_x > 0.3 and mid_x < 0.7:
+                        cv2.putText(frame, 'WARNING!!!', (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), 3)
+
+
+ 
+ 
+ 
+    
+      
+    
+
+
+
+                  
