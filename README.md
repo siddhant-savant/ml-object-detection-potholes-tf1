@@ -28,7 +28,6 @@ This project was developed as part of my **Bachelor of Engineering final year pr
     │ └── visualization_utils.py
     ├── data/ # Label map and optional demo images
     │ ├── labelmap.pbtxt
-    │ └── test_images/
     ├── requirements.txt # Required Python packages
     └── README.md
 
